@@ -19,6 +19,3 @@ AVESPAI is a DevSecOps pipeline built in **n8n** that intercepts raw security al
 3. Update the **Slack**, **GitLab**, and **AI Nodes** with your own credentials and API keys.
 4. **Important:** Review and adjust the Regex patterns in the obfuscation nodes to match your environment's sensitive data before activating the workflow.
 5. Activate the workflow and trigger your first alert.
-
-## 📝 License
-Distributed under the MIT License. See the `LICENSE` file for more information.
