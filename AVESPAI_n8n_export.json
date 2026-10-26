@@ -1,0 +1,1101 @@
+{
+  "name": "My workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-flash",
+        "options": {
+          "temperature": 0
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        -48,
+        528
+      ],
+      "id": "e6d91802-dab1-434f-b234-adea0b37eff9",
+      "name": "Google Gemini Chat Model1",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "PV6YKhti2BRN3yar",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 1
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -768,
+        0
+      ],
+      "id": "eb3d3d38-dcf1-4460-b5db-5f752cfd6fa9",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "resource": "channel",
+        "operation": "history",
+        "channelId": {
+          "__rl": true,
+          "value": "C0B6EQSSJDB",
+          "mode": "id"
+        },
+        "limit": 1,
+        "filters": {}
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.5,
+      "position": [
+        -608,
+        0
+      ],
+      "id": "5864ce31-3e7c-4a20-bc54-dc0108e5a4fe",
+      "name": "Get the history of a channel",
+      "webhookId": "c4549844-a556-43a4-a00c-0eb374b62dba",
+      "credentials": {
+        "slackApi": {
+          "id": "BYHofoXnd43IJT2R",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "C0B6EQSSJDB",
+          "mode": "id"
+        },
+        "text": "=🤖 [Pipeline DevSecOps] New finding successfully processed!\n\n*Vulnerability:* {{ $('Code in JavaScript').first().json.output.title }}\n*Ticket Link:* {{ $('Create an issue1').item.json.web_url }}",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.5,
+      "position": [
+        1152,
+        208
+      ],
+      "id": "abdb398e-dd3d-471c-a51e-e0520eec79c7",
+      "name": "Send a message",
+      "webhookId": "b1523eb9-ff86-42bb-b11d-93b84a9934ef",
+      "credentials": {
+        "slackApi": {
+          "id": "BYHofoXnd43IJT2R",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "48b3ae9f-bc8b-41ae-a0ae-45d058661189",
+              "leftValue": "={{ Object.keys($json).length }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -528,
+        208
+      ],
+      "id": "16d32c17-80d2-4059-8afd-9ad46e89a9d3",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "ee7813b6-0a58-453d-9a06-dd631eb6601d",
+              "leftValue": "={{ $json.client_msg_id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "12b22242-71af-49a6-841e-2b02cb6646bf",
+              "leftValue": "={{ $json.ts }}",
+              "rightValue": "={{ $now.minus({ minutes: 2 }).toUnixInteger() }}",
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            },
+            {
+              "id": "060fdc71-7310-42cc-a698-cf5bcb225d72",
+              "leftValue": "={{ $json.reactions ? JSON.stringify($json.reactions) : '' }}",
+              "rightValue": "eyes",
+              "operator": {
+                "type": "string",
+                "operation": "notContains"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -448,
+        0
+      ],
+      "id": "28540ab9-58a3-4189-8681-eb63f9de9de0",
+      "name": "if"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "let originalText = \"\";\nlet firmaOrigen = \"Unknown\";\nlet idGitlab = \"\";\n\n// 1. Bulletproof Data Retrieval (Fallback Chain)\nif ($json.texto_para_ia) {\n    originalText = $json.texto_para_ia;\n    firmaOrigen = $json.firma_origen;\n    idGitlab = $json.id_gitlab || \"\";\n} else {\n    try {\n        const loopData = $('Loop Over Items').first().json;\n        if (loopData && loopData.texto_para_ia) {\n            originalText = loopData.texto_para_ia;\n            firmaOrigen = loopData.firma_origen;\n            idGitlab = loopData.id_gitlab || \"\";\n        } else {\n            throw new Error(\"No data in Loop\");\n        }\n    } catch (errorLoop) {\n        try {\n            const slackData = $('Format Slack Data').first().json;\n            originalText = slackData.texto_para_ia || \"\";\n            firmaOrigen = slackData.firma_origen || \"Unknown\";\n            idGitlab = slackData.id_gitlab || \"\";\n        } catch (errorSlack) {\n            try {\n                const webhookData = $('Format Webhook Data').first().json;\n                originalText = webhookData.texto_para_ia || \"\";\n                firmaOrigen = webhookData.firma_origen || \"Universal Webhook Pipeline\";\n                idGitlab = webhookData.id_gitlab || \"\";\n            } catch (errorWebhook) {\n                originalText = \"\";\n            }\n        }\n    }\n}\n\n// 2. Safely Mask Data (Optimized Regex)\nconst ipRegex = /\\b(?:\\d{1,3}\\.){3}\\d{1,3}\\b/g;\nlet sanitizedText = originalText.replace(ipRegex, '[IP_REDACTED]');\n\nconst emailRegex = /\\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}\\b/g;\nsanitizedText = sanitizedText.replace(emailRegex, '[EMAIL_REDACTED]');\n\nconst urlRegex = /https?:\\/\\/[^\\s]+/g;\nsanitizedText = sanitizedText.replace(urlRegex, '[URL_REDACTED]');\n\nconst slackUserRegex = /<@U[A-Z0-9]+>/g;\nsanitizedText = sanitizedText.replace(slackUserRegex, '[USER_REDACTED]');\n\nconst domainRegex = /\\b[a-zA-Z0-9.-]+\\.(?:com|net|org|local|internal|edu|gov)\\b/gi;\nsanitizedText = sanitizedText.replace(domainRegex, '[DOMAIN_REDACTED]');\n\n// 3. Attach and return for the AI Agent\n$json.sanitized_text = sanitizedText;\n$json.original_text = originalText;\n$json.firma_origen = firmaOrigen;\n$json.id_gitlab = idGitlab; // Pasamos el ID tal cual viene del origen\n\nreturn $json;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -304,
+        208
+      ],
+      "id": "dd5423b9-350d-4811-917e-3a981da2ee27",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are an expert DevSecOps engineer. Your goal is to process the reported security finding, sanitize the context, and find related historical CVEs to enrich the Threat Intelligence for the Blue Team.\n\nINSTRUCTIONS FOR CVE SEARCH:\n1. MANDATORY: You must use the 'search_nvd_cve' tool.\n2. If the finding is about known software, search using those exact terms.\n3. If it is a custom internal flaw (e.g., IDOR in internal API), search using broad keywords.\n4. FALLBACK SEARCH: If your first search yields no results, you MUST do a second search using ONLY the vulnerability class (e.g., \"SQL Injection\", \"Path Traversal\") to find an illustrative example.\n\nINSTRUCTIONS FOR CWE & CVSS (CRITICAL):\n- CWE_ID: You MUST ALWAYS assign a valid CWE ID (e.g., CWE-89, CWE-79). If the tool does not provide one, DEDUCE IT based on the vulnerability description. NEVER leave it blank.\n- CVSS_SCORE: You MUST ALWAYS assign a score. If it is a known CVE, use the official score. If it is a custom/internal vulnerability, you MUST ESTIMATE the CVSS v3.1 base score based on the technical impact described. NEVER output 0.0 unless the finding is a false positive.\n\nINSTRUCTIONS FOR CONFIDENCE SCORE & MULTIPLE CVES:\n- You must return an array of up to 3 related CVEs.\n- For EACH CVE, assign a \"confidence_score\" (integer 0-100). Be EXTREMELY STRICT and conservative:\n  - 100: EXACT match (The reported software name, version, and vulnerability type match the CVE description perfectly).\n  - 50-70: Partial match (e.g., same vulnerability type, but different version or unconfirmed software).\n  - 10-49: Illustrative example (The CVE is related to the technology, but the main affected product is different, e.g., reporting a flaw in 'Log4j' but finding a CVE for 'ActiveMQ').\n  - CRITICAL: If the primary software product in the finding does not match the primary software in the CVE, the score MUST NEVER exceed 50%.\n- CRITICAL EXCEPTION: If you find an EXACT MATCH (100% confidence), return ONLY THAT SINGLE CVE.\n\nINSTRUCTIONS FOR FINAL OUTPUT:\nProvide your final answer SOLELY and EXCLUSIVELY as a valid JSON object. Do not add markdown blocks like ```json. CRITICAL INSTRUCTION: YOU MUST RETURN ONLY A VALID JSON OBJECT COMPLYING STRICTLY WITH THE REQUESTED SCHEMA. DO NOT INCLUDE ANY INTRODUCTORY TEXT, GREETINGS, EXPLANATIONS, OR MARKDOWN BLOCKS. OUTPUT JUST THE RAW JSON.\n\nUse EXACTLY this JSON structure:\n{\n  \"title\": \"Brief descriptive title\",\n  \"cwe_id\": \"CWE-XXX\",\n  \"cvss_score\": 0.0,\n  \"related_cves\": [\n    {\n      \"cve_id\": \"CVE-XXXX-XXXX\",\n      \"confidence_score\": 100,\n      \"context\": \"Brief reason for choosing this CVE and score.\"\n    }\n  ],\n  \"description\": \"Detailed description of the technical impact.\",\n  \"remediation\": \"Clear, step-by-step actionable remediation guide separated by \\\\n\"\n}\n\nCRITICAL INSTRUCTION FOR MISSING CVES:\nIf after all searches you cannot find ANY related CVEs, you MUST STILL return the strictly required JSON format.\nIn this scenario, fill the JSON fields as follows:\n- related_cves: [ { \"cve_id\": \"NONE-FOUND\", \"confidence_score\": 0, \"context\": \"No related CVEs found in the database.\" } ]\n\nFINDING TO PROCESS:\n{{ $('Code').item.json.sanitized_text }}",
+        "hasOutputParser": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -48,
+        208
+      ],
+      "id": "fd86bfcf-f239-4b13-88e5-59ad9d6fa5cd",
+      "name": "AI Agent",
+      "retryOnFail": false,
+      "waitBetweenTries": 5000,
+      "maxTries": 3,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "toolDescription": "Always use this tool to scan for historical vulnerabilities in the NVD database. Pass it 2 or 3 keywords related to the technology and type of attack (e.g., postgresql sql injection).",
+        "url": "https://services.nvd.nist.gov/rest/json/cves/2.0",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "keywordSearch",
+              "value": "={{ $fromAI('keywords') }}"
+            },
+            {
+              "name": "resultsPerPage",
+              "value": "3"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.4,
+      "position": [
+        48,
+        400
+      ],
+      "id": "3dc76cdb-e4b5-4358-8036-ed51934e2e0c",
+      "name": "search_nvd_cve",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "JnEqYJNiyHCEejwF",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const agentResponse = $input.first().json.output || \"\";\n\n// NEW: The \"Bypass\" Check\n// If the Structured Output Parser did its job perfectly, agentResponse is already an object!\nif (typeof agentResponse === 'object' && agentResponse !== null) {\n    return { output: agentResponse };\n}\n\n// 1. Function to deeply clean and extract JSON from messy AI outputs (String fallback)\nfunction extractAndCleanJSON(rawText) {\n    // Safety check: ensure it is actually a string before manipulating\n    if (typeof rawText !== 'string') {\n        return null; \n    }\n\n    // Strip markdown code blocks if the AI added them\n    let cleanedText = rawText.replace(/```json/gi, '').replace(/```/g, '');\n\n    // Find the absolute boundaries of the JSON object\n    const startIndex = cleanedText.indexOf('{');\n    const endIndex = cleanedText.lastIndexOf('}');\n\n    if (startIndex === -1 || endIndex === -1) {\n        return null; // No JSON object boundaries found\n    }\n\n    // Extract just the JSON payload\n    let jsonString = cleanedText.substring(startIndex, endIndex + 1);\n\n    // 2. The Cleaner: Scrub common stringification artifacts from local LLMs\n    jsonString = jsonString.replace(/\\\\n/g, ' ');\n    jsonString = jsonString.replace(/\\\\t/g, ' ');\n    jsonString = jsonString.replace(/\\\\\"/g, '\"');\n    jsonString = jsonString.replace(/[\\u0000-\\u0019]+/g, \"\");\n\n    // 3. Attempt to parse the sanitized string\n    try {\n        return JSON.parse(jsonString);\n    } catch (error) {\n        console.log(\"JSON Parse Error after cleaning:\", error.message);\n        return null;\n    }\n}\n\n// Execute the cleaner ONLY if it's a messy string\nconst structuredData = extractAndCleanJSON(agentResponse);\n\n// If parsing was successful, return the clean object\nif (structuredData) {\n    return { output: structuredData };\n}\n\n// 4. Fallback Ticket (Strictly in English)\n// Safely convert agentResponse for the ticket description just in case\nconst rawCapture = typeof agentResponse === 'string' ? agentResponse : JSON.stringify(agentResponse);\n\nreturn [{\n    json: {\n        output: {\n            title: \"Manual Triage Required: AI Agent Failure\",\n            description: \"The AI agent failed to return a valid JSON response. It likely encountered a strict API boundary or generated malformed formatting that could not be sanitized.\\n\\n**Raw captured response:**\\n\" + rawCapture,\n            cwe_id: \"PENDING-MANUAL-REVIEW\",\n            cvss_score: 0,\n            related_cves: [{\n                cve_id: \"PENDING-MANUAL-REVIEW\",\n                confidence_score: 0,\n                context: \"Parsing algorithm failed to extract valid JSON.\",\n                epss_badge: \"\"\n            }],\n            remediation: \"Review the raw payload manually to determine the vulnerability context.\"\n        }\n    }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        400,
+        208
+      ],
+      "id": "9c9e2292-3def-4e5a-a0c1-8a58b84477b8",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "resource": "reaction",
+        "channelId": {
+          "__rl": true,
+          "value": "C0B6EQSSJDB",
+          "mode": "id"
+        },
+        "timestamp": "={{ $('Get the history of a channel').item.json.ts }}",
+        "name": "eyes"
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.5,
+      "position": [
+        -240,
+        0
+      ],
+      "id": "4ec6effe-0d7f-4513-a14c-6a628c830ffc",
+      "name": "Add a reaction",
+      "webhookId": "e707edaf-82c1-4882-a9f2-994d1a8ff6eb",
+      "credentials": {
+        "slackApi": {
+          "id": "BYHofoXnd43IJT2R",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://gitlab.com/api/v4/projects/82675985/issues",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "gitlabApi",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "search",
+              "value": "={{ $json.id_gitlab }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -688,
+        208
+      ],
+      "id": "d37dbb6e-d282-456a-bdda-f0feaff9714b",
+      "name": "HTTP Request",
+      "alwaysOutputData": true,
+      "credentials": {
+        "gitlabApi": {
+          "id": "vcW8MKgtPSMHSqIm",
+          "name": "GitLab account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "owner": "alfageme8sa-group",
+        "repository": "alfageme8sa-project",
+        "title": "=[SEC-FINDING] {{ $json.output.title }}",
+        "body": "=### 🚨 Vulnerability Report\n\n- **Title:** {{ $json.output.title }}\n- **CWE:** {{ $json.output.cwe_id }}\n- **CVSS Score:** {{ $json.output.cvss_score }}\n\n---\n\n### 🔍 Related CVEs / Threat Intel References\n\n{{ $json.output.related_cves.map(c => `- **${c.cve_id}** (Confidence: ${c.confidence_score}%)${c.epss_badge || ''}: ${c.context}`).join('\\n') }}\n\n---\n\n### 📋 Description\n\n{{ $json.output.description }}\n\n---\n\n### 🛠️ Remediation Steps\n\n{{ $json.output.remediation }}\n\n---\n> ⚠️ **Automated AI Triage Warning:** This report, including the CVE correlations, CVSS scoring, and remediation steps, was generated automatically by an AI Agent. While designed to be accurate, AI models can hallucinate or misinterpret context. Please manually verify all findings and recommendations before applying critical changes.\n\n*Reported via:* {{ $('Code').last().json.firma_origen }}\n*Ref:* {{ $('Code').last().json.id_gitlab }}",
+        "labels": [
+          {
+            "label": "security"
+          },
+          {
+            "label": "triage-ai"
+          }
+        ],
+        "assignee_ids": []
+      },
+      "type": "n8n-nodes-base.gitlab",
+      "typeVersion": 1,
+      "position": [
+        960,
+        208
+      ],
+      "id": "ace5735d-e71e-4d9b-b7e5-71821d1a5de4",
+      "name": "Create an issue1",
+      "credentials": {
+        "gitlabApi": {
+          "id": "vcW8MKgtPSMHSqIm",
+          "name": "GitLab account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "formTitle": "DevSecOps Triage Portal",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Upload your CSV report",
+              "fieldType": "file",
+              "fieldName": "csv_file"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.5,
+      "position": [
+        224,
+        0
+      ],
+      "id": "1816074c-3458-480a-9c6c-b72dc1a7b5d2",
+      "name": "On form submission",
+      "webhookId": "0027b2aa-fbf0-43af-812c-d0b9e0753a69"
+    },
+    {
+      "parameters": {
+        "binaryPropertyName": "csv_file",
+        "options": {
+          "delimiter": ","
+        }
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        400,
+        0
+      ],
+      "id": "753df159-1cfd-4bd2-bc51-9adeedf4de85",
+      "name": "Extract from File"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Función nativa para generar el hash\nfunction createSimpleHash(str) {\n    let hash = 0;\n    for (let i = 0; i < str.length; i++) {\n        const char = str.charCodeAt(i);\n        hash = ((hash << 5) - hash) + char;\n        hash = hash & hash;\n    }\n    return Math.abs(hash).toString(16);\n}\n\nfor (const item of $input.all()) {\n    let textoCombinado = \"\";\n    \n    // Extraemos todas las columnas (claves) dinámicamente de esta fila\n    const columnasOriginales = Object.keys(item.json);\n    \n    // 1. Recorremos cada columna y montamos un texto estructurado para la IA\n    for (const columna of columnasOriginales) {\n        const valor = item.json[columna];\n        if (valor) { // Solo añadimos si la celda no está vacía\n            textoCombinado += `${columna.toUpperCase()}: ${valor}\\n`;\n        }\n    }\n    \n    // 2. Asignamos el texto gigante a nuestra variable estándar\n    item.json.texto_para_ia = textoCombinado.trim();\n    \n    // 3. Generamos el Hash único basado en TODA la información de la fila\n    const hash = \"REF-\" + createSimpleHash(item.json.texto_para_ia);\n    \n    item.json.id_gitlab = hash;\n    item.json.firma_origen = 'DevSecOps Batch Portal';\n    \n    // 4. LIMPIEZA DINÁMICA: Borramos las columnas originales para no ensuciar el JSON\n    for (const columna of columnasOriginales) {\n        delete item.json[columna];\n    }\n}\n\nreturn $input.all();"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        576,
+        0
+      ],
+      "id": "b0bd5c03-2853-4909-9497-c5a121c1e8f5",
+      "name": "Format CSV Data"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Función nativa para generar el hash\nfunction createSimpleHash(str) {\n    let hash = 0;\n    for (let i = 0; i < str.length; i++) {\n        const char = str.charCodeAt(i);\n        hash = ((hash << 5) - hash) + char;\n        hash = hash & hash;\n    }\n    return Math.abs(hash).toString(16);\n}\n\nfor (const item of $input.all()) {\n    const slackData = $('Get the history of a channel').first().json;\n    \n    item.json.texto_para_ia = slackData.text;\n    \n    // Generamos el ID aquí, ANTES de que empiece la búsqueda\n    item.json.id_gitlab = \"REF-\" + createSimpleHash(slackData.text);\n    item.json.firma_origen = 'Slack ChatOps';\n}\nreturn $input.all();"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -80,
+        0
+      ],
+      "id": "5feb9824-1918-4883-a80c-bdf33d842e6f",
+      "name": "Format Slack Data"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -912,
+        208
+      ],
+      "id": "0b56920c-4c77-4092-9243-8e2ae12881d4",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "amount": 60
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1312,
+        208
+      ],
+      "id": "97ccd4df-a700-4645-896b-da654a0df06f",
+      "name": "Wait",
+      "webhookId": "35e9c349-996f-4746-b4f1-a2b44edb7d02"
+    },
+    {
+      "parameters": {
+        "amount": 62
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        736,
+        480
+      ],
+      "id": "be47adfd-2cf6-4230-b39e-aed50903ca85",
+      "name": "Wait1",
+      "webhookId": "11da66b5-a86e-4af6-9877-0d66574de8fe"
+    },
+    {
+      "parameters": {
+        "model": "command-r-plus-08-2024",
+        "options": {
+          "temperature": 0
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatCohere",
+      "typeVersion": 1,
+      "position": [
+        -320,
+        1072
+      ],
+      "id": "fa1fcbdc-858c-44e5-9c47-25fc43d54a82",
+      "name": "Cohere Chat Model",
+      "credentials": {
+        "cohereApi": {
+          "id": "ORUJgSpS9T41RRNW",
+          "name": "Cohere account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "cohere/north-mini-code:free",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        -496,
+        1072
+      ],
+      "id": "6e433dda-4d51-48b6-96d3-a45e344b5ada",
+      "name": "OpenRouter Chat Model",
+      "credentials": {
+        "openRouterApi": {
+          "id": "qmtQIAL2zzd4Z5tE",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "vulnerabilities-reports",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        880,
+        0
+      ],
+      "id": "de5986a6-26e9-4867-ae9a-b0b9ae9b83de",
+      "name": "Webhook",
+      "webhookId": "cf039420-44b0-4de9-8a20-5011bf734f6b"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Función nativa para generar el hash sin usar módulos externos\nfunction createSimpleHash(str) {\n    let hash = 0;\n    for (let i = 0; i < str.length; i++) {\n        const char = str.charCodeAt(i);\n        hash = ((hash << 5) - hash) + char;\n        hash = hash & hash;\n    }\n    return Math.abs(hash).toString(16);\n}\n\nconst webhookBody = $input.item.json.body;\nconst rawJsonString = JSON.stringify(webhookBody, null, 2);\nconst texto_para_ia = \"RAW_WEBHOOK_PAYLOAD:\\n\" + rawJsonString;\n\n// Generamos el ID único basado en el contenido exacto del Webhook\nconst generatedId = \"REF-\" + createSimpleHash(texto_para_ia);\n\nreturn [{\n    json: {\n        id_gitlab: generatedId,\n        texto_para_ia: texto_para_ia,\n        firma_origen: \"Universal Webhook Pipeline\"\n    }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1056,
+        0
+      ],
+      "id": "36ab20b5-ed96-4910-a05d-be330bb43b7e",
+      "name": "Format Webhook Data"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "2e3fefa8-fb65-49cd-be5d-f40db5b79d65",
+              "leftValue": "={{ $json.output.related_cves[0].cve_id }}",
+              "rightValue": "NONE-FOUND",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        576,
+        208
+      ],
+      "id": "7ab13247-0520-46df-8270-35209cd164d8",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.first.org/data/v1/epss?cve={{ $json.output.related_cves.map(c => c.cve_id).join(',') }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        960,
+        464
+      ],
+      "id": "13be105a-8d73-43f3-9c69-3110cd6d355d",
+      "name": "Get EPSS Score"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1152,
+        464
+      ],
+      "id": "e4e262a0-6ffa-44f5-b9ee-ebd4fa88200c",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $input.item.json;\n\n// Verificamos que existan CVEs\nif (data.output && data.output.related_cves && data.output.related_cves.length > 0) {\n    \n    // Iteramos sobre CADA CVE detectado\n    for (const cveItem of data.output.related_cves) {\n        \n        // Buscamos si tenemos datos del FIRST API para este ID específico\n        // Asumimos que 'data.data' es el array que viene del nodo de la API\n        const epssMatch = data.data ? data.data.find(e => e.cve === cveItem.cve_id) : null;\n\n        if (epssMatch) {\n            const percentage = (parseFloat(epssMatch.epss) * 100).toFixed(2) + \"%\";\n            cveItem.epss_badge = ` *([EPSS](https://www.first.org/epss/model): **${percentage}** prob.)*`;\n        } else {\n            cveItem.epss_badge = \" *([EPSS](https://www.first.org/epss/model): N/A)*\";\n        }\n    }\n}\n\nreturn [{ json: data }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1312,
+        464
+      ],
+      "id": "b727a985-3a55-4cc8-892b-d36bd40e6614",
+      "name": "Format Final Ticket"
+    },
+    {
+      "parameters": {
+        "model": "llama3.3:latest",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
+      "typeVersion": 1,
+      "position": [
+        -144,
+        1072
+      ],
+      "id": "a8b54c97-83bd-417f-812d-ef3826606560",
+      "name": "Ollama Chat Model",
+      "credentials": {
+        "ollamaApi": {
+          "id": "rUywhm0Qr486ifXt",
+          "name": "Ollama account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"title\": {\n      \"type\": \"string\",\n      \"description\": \"A concise title for the vulnerability report.\"\n    },\n    \"cwe_id\": {\n      \"type\": \"string\",\n      \"description\": \"The relevant CWE ID, e.g., CWE-94. If unknown, return NONE-FOUND.\"\n    },\n    \"cvss_score\": {\n      \"type\": \"number\",\n      \"description\": \"The CVSS score (0.0 to 10.0).\"\n    },\n    \"description\": {\n      \"type\": \"string\",\n      \"description\": \"Detailed explanation of the vulnerability and attack vector.\"\n    },\n    \"remediation\": {\n      \"type\": \"string\",\n      \"description\": \"Actionable steps to mitigate the vulnerability.\"\n    },\n    \"related_cves\": {\n      \"type\": \"array\",\n      \"description\": \"List of related historical CVEs. If none found, return a single object with NONE-FOUND.\",\n      \"items\": {\n        \"type\": \"object\",\n        \"properties\": {\n          \"cve_id\": {\n            \"type\": \"string\",\n            \"description\": \"The exact CVE ID, e.g., CVE-2022-26134.\"\n          },\n          \"confidence_score\": {\n            \"type\": \"number\",\n            \"description\": \"Confidence percentage from 0 to 100.\"\n          },\n          \"context\": {\n            \"type\": \"string\",\n            \"description\": \"Why this CVE is related to the finding.\"\n          }\n        },\n        \"required\": [\n          \"cve_id\",\n          \"confidence_score\",\n          \"context\"\n        ]\n      }\n    }\n  },\n  \"required\": [\n    \"title\",\n    \"cwe_id\",\n    \"cvss_score\",\n    \"description\",\n    \"remediation\",\n    \"related_cves\"\n  ]\n}",
+        "autoFix": true
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        96,
+        544
+      ],
+      "id": "58f86940-ea52-42ec-9b42-44d59026d895",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Si el contador no existe (es la primera vez que falla), lo inicializa a 0.\n// Luego le suma 1 en cada vuelta.\n$json.retry_count = ($json.retry_count || 0) + 1;\n\nreturn $json;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        416,
+        464
+      ],
+      "id": "7cf12a6a-ee5d-415c-aedb-be7994477c89",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "c7a337d7-6673-48f5-b039-b16d599280a8",
+              "leftValue": "={{ $json.retry_count }}",
+              "rightValue": 5,
+              "operator": {
+                "type": "number",
+                "operation": "lte"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        576,
+        464
+      ],
+      "id": "541bb048-2f35-42ed-90ae-95f437ee73dd",
+      "name": "If2"
+    },
+    {
+      "parameters": {
+        "content": "# AVESPAI\n## Automated Vulnerability Enrichment System Powered by AI",
+        "width": 704
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -912,
+        480
+      ],
+      "typeVersion": 1,
+      "id": "dd46c33a-b9a1-483f-b8b5-5ba8ca4f69d4",
+      "name": "Sticky Note"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Google Gemini Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Structured Output Parser",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get the history of a channel",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get the history of a channel": {
+      "main": [
+        [
+          {
+            "node": "if",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "if": {
+      "main": [
+        [
+          {
+            "node": "Add a reaction",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "search_nvd_cve": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add a reaction": {
+      "main": [
+        [
+          {
+            "node": "Format Slack Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create an issue1": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "On form submission": {
+      "main": [
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "Format CSV Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format CSV Data": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Slack Data": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [],
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait1": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cohere Chat Model": {
+      "ai_languageModel": [
+        []
+      ]
+    },
+    "OpenRouter Chat Model": {
+      "ai_languageModel": [
+        []
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Format Webhook Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Webhook Data": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Get EPSS Score",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create an issue1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get EPSS Score": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Format Final Ticket",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Final Ticket": {
+      "main": [
+        [
+          {
+            "node": "Create an issue1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama Chat Model": {
+      "ai_languageModel": [
+        []
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "If2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If2": {
+      "main": [
+        [
+          {
+            "node": "Wait1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "37ef5952-e9f0-4677-b0dd-091fc2936d06",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "f733b3d4921fd6cdacfdafbe9a41049489d804dfbaa00948a15bf5c01b5c1e9d"
+  },
+  "id": "aCFGnMmAkE1IZOcq",
+  "tags": []
+}
